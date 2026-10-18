@@ -5,7 +5,7 @@ on:
   push:
     paths: ['werkzeug/urls.txt']
 permissions:
-  contents: read
+  contents: write
 jobs:
   shots:
     runs-on: ubuntu-latest
@@ -15,5 +15,9 @@ jobs:
         with: { node-version: 22 }
       - run: npm i --no-save playwright && npx playwright install --with-deps chromium
       - run: node werkzeug/shots.mjs
-      - uses: actions/upload-artifact@v4
-        with: { name: shots, path: shots, retention-days: 7 }
+      - name: Ergebnisse in Zweig 'shots' ablegen
+        run: |
+          git config user.name "falk-bot"; git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan shots; git rm -rf . >/dev/null 2>&1 || true
+          git checkout "$GITHUB_SHA" -- werkzeug/urls.txt 2>/dev/null || true
+          git add -f shots werkzeug/urls.txt; git commit -qm "Screenshots"; git push -f origin shots
