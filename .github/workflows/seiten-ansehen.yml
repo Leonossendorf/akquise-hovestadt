@@ -1,0 +1,19 @@
+name: Seiten ansehen
+# Macht Screenshots (Desktop + Handy) und Textauszüge der Seiten aus werkzeug/urls.txt.
+on:
+  workflow_dispatch:
+  push:
+    paths: ['werkzeug/urls.txt']
+permissions:
+  contents: read
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - run: node werkzeug/shots.mjs
+      - uses: actions/upload-artifact@v4
+        with: { name: shots, path: shots, retention-days: 7 }
