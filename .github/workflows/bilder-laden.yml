@@ -1,0 +1,31 @@
+name: Bilder laden
+# Lädt die öffentlichen Fotos von hovestadt-ahle.de für den Entwurf ins Repo (Ordner quelle/).
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/bildquellen.txt']
+permissions:
+  contents: write
+jobs:
+  laden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bilder herunterladen und verkleinern
+        run: |
+          mkdir -p quelle
+          while read -r url; do
+            [ -z "$url" ] && continue
+            f="quelle/$(echo "$url" | sed 's#.*/uploads/##; s#/#-#g')"
+            [ -f "$f" ] && continue
+            curl -fsSL --retry 2 -o "$f" "$url" || echo "FEHLT: $url"
+          done < tools/bildquellen.txt
+          for f in quelle/*.jpg; do mogrify -auto-orient -resize '2000x2000>' -strip -quality 82 "$f" || true; done
+          ls -la quelle
+      - name: Ins Repo übernehmen
+        run: |
+          git config user.name "falk-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add quelle
+          git diff --cached --quiet || git commit -m "Bilder von hovestadt-ahle.de geladen (Entwurf)"
+          git push
